@@ -3,7 +3,7 @@ project(FHE-SVM)
 
 set(CMAKE_CXX_STANDARD 14)
 
-#find_package(OpenFHE 1.0.2)
+# make sure you have OpenFHE v1.0.4 installed in the path below
 find_package(OpenFHE 1.0.4 EXACT REQUIRED PATHS ../../myinstalls)
 set(CMAKE_CXX_FLAGS ${OpenFHE_CXX_FLAGS})
 
