@@ -8,7 +8,9 @@ OpenFHE is a library for homomorphic encryption, which allows you to perform com
 
 To build the project, run the following commands:
 
+```
 mkdir build
 cd build
 cmake ..
 make
+```
