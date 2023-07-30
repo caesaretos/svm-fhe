@@ -255,12 +255,15 @@ int main() {
     auto ct_bias = cc->Encrypt(keys.publicKey, pt_bias);
 
     // Step 4: Evaluation
-
+    TimeVar t;
+    TIC(t);
     auto ct_res = cc->EvalInnerProduct(ct_x, ct_weights, n);
     vector<double> mask = {1.0, 0.0, 0.0, 0.0};
     Plaintext pt_mask = cc->MakeCKKSPackedPlaintext(mask);
     ct_res = cc->EvalMult(ct_res, pt_mask);
     ct_res += ct_bias;
+    auto timeEvalSVMTime = TOC_MS(t);
+    std::cout << "Linear-SVM inference took: " << timeEvalSVMTime << " ms\n\n"; 
 
     // Step 5: Decryption and output
     Plaintext result;
