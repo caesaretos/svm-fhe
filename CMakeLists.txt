@@ -29,3 +29,4 @@ else ()
 endif ()
 
 add_executable(svm-linear svm-linear.cpp)
+add_executable(svm-poly svm-poly.cpp)
