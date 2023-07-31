@@ -134,6 +134,17 @@ int next_power_of_2(int number) {
     return next_power_of_2;
 }
 
+Ciphertext<DCRTPoly> total_sum(Ciphertext<DCRTPoly> &ct_in, uint32_t row_size) {
+    const auto cc = ct_in->GetCryptoContext();
+    auto ct_out = ct_in;
+    for(uint32_t i = 0; i < log2(row_size); i++) {
+        auto ct_temp = cc->EvalRotate( ct_out, (1<<i) );
+        ct_out = cc->EvalAdd(ct_out, ct_temp);
+    }
+
+    return ct_out;
+}
+
 const string DATA_FOLDER = "../data-kernel-model/";
 
 int main() {
@@ -194,7 +205,8 @@ int main() {
     std::cout << "Key gen started\n";
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalSumKeyGen(keys.secretKey);
-    auto evalSumColKeys = cc->EvalSumColsKeyGen(keys.secretKey);
+    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2});
+    // auto evalSumColKeys = cc->EvalSumColsKeyGen(keys.secretKey);
     std::cout << "Key gen done\n";
 
     auto decrypt_and_print = [&](Ciphertext<DCRTPoly> &ct, const string& label) {
@@ -260,7 +272,11 @@ int main() {
     auto ct_prod = cc->EvalMult(ct_x, pt_support_vectors);
     decrypt_and_print(ct_prod, "ct_prod");
     std::cout << "Mult Done 1\n";
-    auto ct_dot_prod = cc->EvalSumCols(ct_prod, n, *evalSumColKeys);
+    
+    // auto ct_dot_prod = cc->EvalSumCols(ct_prod, n, *evalSumColKeys);
+    
+    auto ct_dot_prod = total_sum(ct_prod, n);
+
     decrypt_and_print(ct_dot_prod, "ct_dot_prod");
     std::cout << "2\n";
     auto ct_gamma_dot_prod = cc->EvalMult(ct_dot_prod, pt_gamma);

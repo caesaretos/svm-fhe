@@ -4,10 +4,11 @@ project(FHE-SVM)
 set(CMAKE_CXX_STANDARD 14)
 
 # make sure you have OpenFHE v1.0.4 installed in the path below
-find_package(OpenFHE 1.0.4 EXACT REQUIRED PATHS ../../myinstalls)
+#find_package(OpenFHE 1.0.4 EXACT REQUIRED PATHS ../../myinstalls)
+find_package(OpenFHE 1.0.4 EXACT REQUIRED PATHS ../../myinstalls/debug)
 set(CMAKE_CXX_FLAGS ${OpenFHE_CXX_FLAGS})
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 include_directories(${OPENMP_INCLUDES})
 include_directories(${OpenFHE_INCLUDE})
@@ -29,4 +30,5 @@ else ()
 endif ()
 
 add_executable(svm-linear svm-linear.cpp)
-add_executable(svm-poly svm-poly.cpp)
+add_executable(svm-poly-v1 svm-poly-v1.cpp)
+add_executable(svm-poly-v2 svm-poly-v2.cpp)
