@@ -268,12 +268,7 @@ int main() {
     auto ct_prod = cc->EvalMult(ct_x, pt_support_vectors);   
     auto ct_dot_prod = total_sum(ct_prod, n);
     auto ct_gamma_dot_prod = cc->EvalMult(ct_dot_prod, pt_gamma);
-
-    // auto tmp = cc->EvalSquare(ct_gamma_dot_prod);
-    // auto ct_kernel_out = cc->EvalMult(ct_gamma_dot_prod, tmp);    
-
     auto ct_kernel_out = cc->EvalPoly(ct_gamma_dot_prod, kernel_poly_coeffs);
-
     auto ct_kernel_dual_coeffs = cc->EvalMult(ct_kernel_out, pt_dual_coeffs);
     auto ct_sum = cc->EvalSum(ct_kernel_dual_coeffs, next_power_of_2(n*n_SVs));
     auto ct_res = cc->EvalAdd(ct_sum, pt_bias);
