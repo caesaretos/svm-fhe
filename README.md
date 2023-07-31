@@ -1,4 +1,4 @@
-# Simple SVM Inference in FHE 
+# Simple SVM Inference with FHE 
 
 This is a sample program that demonstrates how to run SVM inference on encrypted inputs. It is for educational purposes only.
 

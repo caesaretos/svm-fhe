@@ -186,7 +186,7 @@ int main() {
         std::cout << "iteration: " << i+1 << "\n"; 
         auto dot_prod = cc->EvalInnerProduct(ct_x, pt_support_vectors[i], n);
         auto ct_gamma_dot_prod = cc->EvalMult(dot_prod, pt_gamma);
-        auto ct_kernel_out = cc->EvalPolyPS(ct_gamma_dot_prod, kernel_poly_coeffs);
+        auto ct_kernel_out = cc->EvalPoly(ct_gamma_dot_prod, kernel_poly_coeffs);
         auto ct_out = cc->EvalMult(ct_kernel_out, dual_coeffs[i]);
         ct_res += ct_out;
     }

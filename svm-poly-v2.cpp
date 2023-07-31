@@ -186,9 +186,6 @@ int main() {
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleModSize);
     parameters.SetBatchSize(next_power_of_2(batchSize*n_SVs));
-    parameters.SetScalingTechnique(FIXEDAUTO);
-    parameters.SetSecurityLevel(HEStd_NotSet); 
-    parameters.SetRingDim(128*2);
 
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
 
@@ -199,16 +196,16 @@ int main() {
     cc->Enable(ADVANCEDSHE);
     cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << endl << endl;
 
+    std::cout << "Key gen started ...\n";
     // Step 2: Key Generation
     auto keys = cc->KeyGen();
-
-    std::cout << "Key gen started\n";
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalSumKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2});
-    // auto evalSumColKeys = cc->EvalSumColsKeyGen(keys.secretKey);
+    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2}); // powers of two upto n
     std::cout << "Key gen done\n";
 
+    // utility function for debugging
+    /*
     auto decrypt_and_print = [&](Ciphertext<DCRTPoly> &ct, const string& label) {
         Plaintext res;
         cout.precision(8);
@@ -218,6 +215,7 @@ int main() {
         res->SetLength(next_power_of_2(batchSize*n_SVs));
         cout << res;
     };
+    */
 
     // Step 3: Encoding and encryption of inputs
   
@@ -229,8 +227,7 @@ int main() {
     gamma_vec.resize(next_power_of_2(n*n_SVs), 0);
     std::cout << "gamma_vec.size: " << gamma_vec.size() << "\n";
     Plaintext pt_gamma = cc->MakeCKKSPackedPlaintext(gamma_vec);
-    std::cout << "encoding gamma done\n";
-    
+   
     // preparing polynomial coeffs
     vector<double> kernel_poly_coeffs(degree + 1, 0.0);
     kernel_poly_coeffs[degree] = 1;
@@ -239,67 +236,51 @@ int main() {
     clone_vector_inplace(x, n_SVs);
     x.resize(next_power_of_2(n*n_SVs), 0);
     Plaintext pt_x = cc->MakeCKKSPackedPlaintext(x);
-    std::cout << "encoding cloned x done\n";
     // support vectors in 1 plaintext (flattend)
     vector<double> flattened_support_vectors = flatten_vector(support_vectors);
     flattened_support_vectors.resize(next_power_of_2(n*n_SVs), 0);
     Plaintext pt_support_vectors = cc->MakeCKKSPackedPlaintext(flattened_support_vectors);
-    std::cout << "encoding flattend support vectors done\n";
     // bias
     bias.resize(next_power_of_2(n*n_SVs), 0);
     Plaintext pt_bias = cc->MakeCKKSPackedPlaintext(bias);
-    std::cout << "encoding bias done\n";
     // dual coeffs
     vector<double> dual_coeffs_vec(n*n_SVs, 0.0);
     for(size_t i = 0; i < dual_coeffs.size(); i++) {
         dual_coeffs_vec[i*n] = dual_coeffs[i];
     }
     Plaintext pt_dual_coeffs = cc->MakeCKKSPackedPlaintext(dual_coeffs_vec);
-    std::cout << "data encoding done\n";
+    std::cout << "Data encoding done\n";
 
     // Encrypt the encoded vectors
-    std::cout << "encrypting x\n";
+    std::cout << "Encrypting x started ... \n";
     auto ct_x = cc->Encrypt(keys.publicKey, pt_x);
+    std::cout << "Data encryption done\n";
+    
     
     // keep the model un-encrypted
 
     // Step 4: Evaluation
-    std::cout << "evaluation started ... \n\n";
+    std::cout << "Evaluation started ... \n\n";
     TimeVar t;
     TIC(t);
     // do first vector here
-    decrypt_and_print(ct_x, "ct_x");
-    auto ct_prod = cc->EvalMult(ct_x, pt_support_vectors);
-    decrypt_and_print(ct_prod, "ct_prod");
-    std::cout << "Mult Done 1\n";
-    
-    // auto ct_dot_prod = cc->EvalSumCols(ct_prod, n, *evalSumColKeys);
-    
-    auto ct_dot_prod = total_sum(ct_prod, n);
 
-    decrypt_and_print(ct_dot_prod, "ct_dot_prod");
-    std::cout << "2\n";
+    auto ct_prod = cc->EvalMult(ct_x, pt_support_vectors);   
+    auto ct_dot_prod = total_sum(ct_prod, n);
     auto ct_gamma_dot_prod = cc->EvalMult(ct_dot_prod, pt_gamma);
-    decrypt_and_print(ct_gamma_dot_prod, "ct_gamma_dot_prod");
-    std::cout << "3\nevaluating PS\n";
-    print_double_vector_comma_separated(kernel_poly_coeffs, "kernel");
-    auto tmp = cc->EvalSquare(ct_gamma_dot_prod);
-    auto ct_kernel_out = cc->EvalMult(ct_gamma_dot_prod, tmp);
-    
-    // auto ct_kernel_out = cc->EvalPolyPS(ct_gamma_dot_prod, kernel_poly_coeffs);
-    
-    decrypt_and_print(ct_kernel_out, "ct_kernel_out");
-    std::cout << "4\n";
+
+    // auto tmp = cc->EvalSquare(ct_gamma_dot_prod);
+    // auto ct_kernel_out = cc->EvalMult(ct_gamma_dot_prod, tmp);    
+
+    auto ct_kernel_out = cc->EvalPoly(ct_gamma_dot_prod, kernel_poly_coeffs);
+
     auto ct_kernel_dual_coeffs = cc->EvalMult(ct_kernel_out, pt_dual_coeffs);
-    decrypt_and_print(ct_kernel_dual_coeffs, "ct_kernel_dual_coeffs");
-    std::cout << "5\n";
     auto ct_sum = cc->EvalSum(ct_kernel_dual_coeffs, next_power_of_2(n*n_SVs));
-    decrypt_and_print(ct_sum, "ct_sum");
-    std::cout << "6\n";
     auto ct_res = cc->EvalAdd(ct_sum, pt_bias);
-    decrypt_and_print(ct_res, "ct_res");
-    std::cout << "7\n";
     auto timeEvalSVMTime = TOC_MS(t);
+    
+    std::cout << "Evalaution done\n";
+
     std::cout << "Linear-SVM inference took: " << timeEvalSVMTime << " ms\n\n"; 
 
     // Step 5: Decryption and output
@@ -307,7 +288,7 @@ int main() {
     // We set the cout precision to 8 decimal digits for a nicer output.
     // If you want to see the error/noise introduced by CKKS, bump it up
     // to 15 and it should become visible.
-    cout.precision(8);
+    cout.precision(15);
 
     cout << endl << "Results of homomorphic computations: " << endl;
 
