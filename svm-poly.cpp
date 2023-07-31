@@ -101,7 +101,13 @@ int main() {
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
     uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    
+    // polynomial kernel parameters
+    double gamma = 2;
+    uint32_t degree = 3;
     vector<vector<double>> support_vectors = read_2d_matrix_from_file("../data-kernel-model/support_vectors_poly.txt");
+    std::cout << "number of support vectors: " << support_vectors.size() << "\n";
+    std::cout << "dimension of each support vector: " << support_vectors[0].size() << "\n";
     print_matrix(support_vectors, "support vectors");
 
     // read the data
@@ -120,10 +126,8 @@ int main() {
     print_double_vector_comma_separated(y_ground_truth, "y_ground_truth");
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
-    return 0;
-
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 2;
+    uint32_t multDepth = 6;
     uint32_t scaleModSize = 50;
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
@@ -149,45 +153,62 @@ int main() {
     // Step 3: Encoding and encryption of inputs
 
     // Encoding as plaintexts
-    // Plaintext pt_x = cc->MakeCKKSPackedPlaintext(x);
-    // Plaintext pt_weights = cc->MakeCKKSPackedPlaintext(weights);
-    // Plaintext pt_bias = cc->MakeCKKSPackedPlaintext(bias);
-
-    // cout << "Input pt_x: " << pt_x << endl;
-    // cout << "Input pt_weights: " << pt_weights << endl;
-    // cout << "Input pt_bias: " << pt_bias << endl;
     
+    // preparing zero vector for initialization
+    vector<double> zeros(n, 0.0);
+    Plaintext pt_zeros = cc->MakeCKKSPackedPlaintext(zeros);
+    // preparing gamma
+    vector<double> gamma_vec(n, 0.0);
+    gamma_vec[0] = gamma;
+    Plaintext pt_gamma = cc->MakeCKKSPackedPlaintext(gamma_vec);
+    // prepaing polynomial coeffs
+    vector<double> kernel_poly_coeffs(degree + 1, 0.0);
+    kernel_poly_coeffs[degree] = 1;
 
-    // // Encrypt the encoded vectors
-    // auto ct_x = cc->Encrypt(keys.publicKey, pt_x);
-    // auto ct_weights = cc->Encrypt(keys.publicKey, pt_weights);
-    // auto ct_bias = cc->Encrypt(keys.publicKey, pt_bias);
+    Plaintext pt_x = cc->MakeCKKSPackedPlaintext(x);
+    vector<Plaintext> pt_support_vectors;
+    vector<Plaintext> pt_dual_coeffs;
+    for (auto vector : support_vectors) {
+        pt_support_vectors.push_back(cc->MakeCKKSPackedPlaintext(vector));
+    }
+    Plaintext pt_bias = cc->MakeCKKSPackedPlaintext(bias);
 
-    // // Step 4: Evaluation
-    // TimeVar t;
-    // TIC(t);
-    // auto ct_res = cc->EvalInnerProduct(ct_x, ct_weights, n);
-    // vector<double> mask = {1.0, 0.0, 0.0, 0.0};
-    // Plaintext pt_mask = cc->MakeCKKSPackedPlaintext(mask);
-    // ct_res = cc->EvalMult(ct_res, pt_mask);
-    // ct_res += ct_bias;
-    // auto timeEvalSVMTime = TOC_MS(t);
-    // std::cout << "Linear-SVM inference took: " << timeEvalSVMTime << " ms\n\n"; 
+    // Encrypt the encoded vectors
+    auto ct_x = cc->Encrypt(keys.publicKey, pt_x);
+    
+    // keep the model un-encrypted
 
-    // // Step 5: Decryption and output
-    // Plaintext result;
-    // // We set the cout precision to 8 decimal digits for a nicer output.
-    // // If you want to see the error/noise introduced by CKKS, bump it up
-    // // to 15 and it should become visible.
-    // cout.precision(8);
+    // Step 4: Evaluation
+    TimeVar t;
+    TIC(t);
+    // do first vector here
+    auto ct_res = cc->Encrypt(keys.publicKey, pt_zeros);
+    for (size_t i = 0; i < pt_support_vectors.size(); i++) {
+        std::cout << "iteration: " << i+1 << "\n"; 
+        auto dot_prod = cc->EvalInnerProduct(ct_x, pt_support_vectors[i], n);
+        auto ct_gamma_dot_prod = cc->EvalMult(dot_prod, pt_gamma);
+        auto ct_kernel_out = cc->EvalPolyPS(ct_gamma_dot_prod, kernel_poly_coeffs);
+        auto ct_out = cc->EvalMult(ct_kernel_out, dual_coeffs[i]);
+        ct_res += ct_out;
+    }
+    ct_res = cc->EvalAdd(ct_res, pt_bias);
+    auto timeEvalSVMTime = TOC_MS(t);
+    std::cout << "Linear-SVM inference took: " << timeEvalSVMTime << " ms\n\n"; 
 
-    // cout << endl << "Results of homomorphic computations: " << endl;
+    // Step 5: Decryption and output
+    Plaintext result;
+    // We set the cout precision to 8 decimal digits for a nicer output.
+    // If you want to see the error/noise introduced by CKKS, bump it up
+    // to 15 and it should become visible.
+    cout.precision(8);
 
-    // cc->Decrypt(keys.secretKey, ct_res, &result);
-    // result->SetLength(batchSize);
-    // cout << "computed classification score = " << result;
-    // cout << "Estimated precision in bits: " << result->GetLogPrecision() << endl;
-    // print_double_vector_comma_separated(y_expected_score, "y_expected_score");
+    cout << endl << "Results of homomorphic computations: " << endl;
+
+    cc->Decrypt(keys.secretKey, ct_res, &result);
+    result->SetLength(batchSize);
+    cout << "computed classification score = " << result;
+    cout << "Estimated precision in bits: " << result->GetLogPrecision() << endl;
+    print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     cout << "SVM Polynomial Kernel terminated gracefully ... !\n";
 
