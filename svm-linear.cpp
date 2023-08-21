@@ -76,6 +76,12 @@ int main() {
     print_double_vector_comma_separated(y_ground_truth, "y_ground_truth");
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
+    #if NATIVEINT == 128
+    std::cout << "Using 128-bit OpenFHE" << std::endl;
+    #else
+    std::cout << "Using 64-bit OpenFHE" << std::endl;
+    #endif
+
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 2;
     uint32_t scaleModSize = 50;

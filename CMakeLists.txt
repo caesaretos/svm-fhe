@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(FHE-SVM)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 # make sure you have OpenFHE v1.0.4 installed in the path below
-find_package(OpenFHE 1.0.4 EXACT REQUIRED PATHS ../../myinstalls)
+find_package(OpenFHE 1.1.0 EXACT REQUIRED PATHS ../../myinstalls)
 set(CMAKE_CXX_FLAGS ${OpenFHE_CXX_FLAGS})
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
@@ -14,6 +14,7 @@ include_directories(${OpenFHE_INCLUDE})
 include_directories(${OpenFHE_INCLUDE}/third-party/include)
 include_directories(${OpenFHE_INCLUDE}/core)
 include_directories(${OpenFHE_INCLUDE}/pke)
+include_directories(${OpenFHE_INCLUDE}/binfhe)
 link_directories(${OpenFHE_LIBDIR})
 link_directories(${OPENMP_LIBRARIES})
 
