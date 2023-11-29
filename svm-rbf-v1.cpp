@@ -9,6 +9,7 @@ using namespace lbcrypto;
 #include <vector>
 
 using namespace std;
+// #define VERBOSE
 
 // utility functions
 void print_double_vector_comma_separated(const vector<double>& data, const string& label) {
@@ -127,14 +128,14 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 7;
-    uint32_t scaleModSize = 50;
+    uint32_t multDepth = 11; // 11 works
+    uint32_t scaleModSize = 50; // 50 works
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleModSize);
     parameters.SetBatchSize(batchSize);
-
+    
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
 
     // Enable the features that you wish to use
@@ -177,10 +178,39 @@ int main() {
     // Encrypt the encoded vectors
     auto ct_x = cc->Encrypt(keys.publicKey, pt_x);
     cout << "num levels in input ctxt: " << ct_x->GetLevel() << "\n";
+    cout << "num towers in input ctxt: " << ct_x->GetElements()[0].GetAllElements().size() << endl;
     
     // keep the model un-encrypted
     double lowerBound = -190, upperBound = 0.0;
-    uint32_t polyDegree = 13;
+    uint32_t polyDegree = 119; // 13, 27, 59, or 119;
+
+#ifdef VERBOSE
+    auto DecAndPrint = [cc, batchSize, keys] (lbcrypto::Ciphertext<lbcrypto::DCRTPoly> ctxt, std::string label)
+    {
+        Plaintext res;
+        // We set the cout precision to 8 decimal digits for a nicer output.
+        // If you want to see the error/noise introduced by CKKS, bump it up
+        // to 15 and it should become visible.
+        cout.precision(8);
+        cc->Decrypt(keys.secretKey, ctxt, &res);
+        res->SetLength(batchSize);
+        cout << label << ": " << res;
+        // cout << "Estimated precision in bits: " << res->GetLogPrecision() << endl;
+    };
+    #else
+    auto DecAndPrint = [cc, batchSize, keys] (lbcrypto::Ciphertext<lbcrypto::DCRTPoly> ctxt, std::string label)
+    {
+        // Plaintext res;
+        // // We set the cout precision to 8 decimal digits for a nicer output.
+        // // If you want to see the error/noise introduced by CKKS, bump it up
+        // // to 15 and it should become visible.
+        // cout.precision(8);
+        // cc->Decrypt(keys.secretKey, ctxt, &res);
+        // res->SetLength(batchSize);
+        // cout << label << ": " << res;
+        // cout << "Estimated precision in bits: " << res->GetLogPrecision() << endl;
+    };
+#endif
 
     // Step 4: Evaluation
     TimeVar t;
@@ -188,6 +218,9 @@ int main() {
     // do first vector here
     auto ct_res = cc->Encrypt(keys.publicKey, pt_zeros);
     for (size_t i = 0; i < pt_support_vectors.size(); i++) {
+        #ifdef VERBOSE
+        cout << "BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN BEGIN\n";
+        #endif
         std::cout << "iteration: " << i+1 << "\n"; 
         // auto dot_prod = cc->EvalInnerProduct(ct_x, pt_support_vectors[i], n);
         // auto ct_gamma_dot_prod = cc->EvalMult(dot_prod, pt_gamma);
@@ -195,12 +228,21 @@ int main() {
         // auto ct_out = cc->EvalMult(ct_kernel_out, dual_coeffs[i]);
 
         auto diff = cc->EvalSub(ct_x, pt_support_vectors[i]);
+        DecAndPrint(diff, "diff");
         diff = cc->EvalSquare(diff);
+        DecAndPrint(diff, "squr");
         auto sum = cc->EvalSum(diff, batchSize);
-        sum = cc->EvalMult(sum, gamma);
-        auto ct_out = cc->EvalChebyshevFunction([](double x) -> double { return std::exp(x); }, sum, lowerBound,
+        DecAndPrint(sum, "totl");
+        sum = cc->EvalMult(sum, -gamma);
+        DecAndPrint(sum, "by gama");
+        auto ct_out = cc->EvalChebyshevFunction([](double y) -> double { return std::exp(y); }, sum, lowerBound,
                                             upperBound, polyDegree);
+        DecAndPrint(ct_out, "expo");
+        ct_out = cc->EvalMult(ct_out, dual_coeffs[i]);
         ct_res += ct_out;
+        #ifdef VERBOSE
+        cout << "END END END END END END END END END END END END END END END END END \n";
+        #endif
     }
     ct_res = cc->EvalAdd(ct_res, pt_bias);
     auto timeEvalSVMTime = TOC_MS(t);
@@ -215,6 +257,7 @@ int main() {
 
     cout << endl << "Results of homomorphic computations: " << endl;
     cout << "num levels in result ctxt: " << ct_res->GetLevel() << "\n";
+    cout << "num towers in result ctxt: " << ct_res->GetElements()[0].GetAllElements().size() << endl;
 
     cc->Decrypt(keys.secretKey, ct_res, &result);
     result->SetLength(batchSize);
