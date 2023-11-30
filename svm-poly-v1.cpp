@@ -100,11 +100,11 @@ int main() {
 
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
-    uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 30; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 2;
-    uint32_t degree = 3;
+    uint32_t degree = 13;
     vector<vector<double>> support_vectors = read_2d_matrix_from_file("../data-kernel-model/support_vectors_poly.txt");
     std::cout << "number of support vectors: " << support_vectors.size() << "\n";
     std::cout << "dimension of each support vector: " << support_vectors[0].size() << "\n";
@@ -127,9 +127,9 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 6;
-    uint32_t scaleModSize = 50;
-    uint32_t batchSize = n;
+    uint32_t multDepth = 10;
+    uint32_t scaleModSize = 59;
+    uint32_t batchSize = 32; // next power of 2 of n
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleModSize);

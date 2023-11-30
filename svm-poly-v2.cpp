@@ -151,11 +151,11 @@ int main() {
 
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
-    uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 2;
-    uint32_t degree = 3;
+    uint32_t degree = 13;
     vector<vector<double>> support_vectors = read_2d_matrix_from_file(DATA_FOLDER + "support_vectors_poly.txt");
     uint32_t n_SVs = support_vectors.size();
     std::cout << "number of support vectors: " << n_SVs << "\n";
@@ -179,9 +179,9 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 6;
-    uint32_t scaleModSize = 50;
-    uint32_t batchSize = n;
+    uint32_t multDepth = 7;
+    uint32_t scaleModSize = 59;
+    uint32_t batchSize = next_power_of_2(n);
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleModSize);
@@ -201,7 +201,7 @@ int main() {
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalSumKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2}); // powers of two upto n
+    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2, 4, 8, 16, 32}); // powers of two upto n
     std::cout << "Key gen done\n";
 
     // utility function for debugging
@@ -220,7 +220,7 @@ int main() {
     // Step 3: Encoding and encryption of inputs
   
     // preparing gamma
-    vector<double> gamma_vec(n, 0.0);
+    vector<double> gamma_vec(next_power_of_2(n), 0.0);
     gamma_vec[0] = gamma;
     std::cout << "n: " << n << "\n";
     clone_vector_inplace(gamma_vec, n_SVs);
@@ -273,6 +273,9 @@ int main() {
     auto ct_sum = cc->EvalSum(ct_kernel_dual_coeffs, next_power_of_2(n*n_SVs));
     auto ct_res = cc->EvalAdd(ct_sum, pt_bias);
     auto timeEvalSVMTime = TOC_MS(t);
+
+    cout << "num levels in result ctxt: " << ct_res->GetLevel() << "\n";
+    cout << "num towers in result ctxt: " << ct_res->GetElements()[0].GetAllElements().size() << endl;
     
     std::cout << "Evalaution done\n";
 
