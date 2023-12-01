@@ -151,7 +151,7 @@ int main() {
 
     cout << "SVM RBF Kernel started ... !\n\n";
 
-    uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 1.0/n;
@@ -180,7 +180,7 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 11;
-    uint32_t scaleModSize = 50;
+    uint32_t scaleModSize = 59;
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
@@ -201,7 +201,7 @@ int main() {
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalSumKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2}); // powers of two upto n
+    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2, 4, 8, 16, 32}); // powers of two upto n
     std::cout << "Key gen done\n";
 
     // utility function for debugging
@@ -259,8 +259,8 @@ int main() {
     cout << "num towers in input ctxt: " << ct_x->GetElements()[0].GetAllElements().size() << endl;
     
     // keep the model un-encrypted
-    double lowerBound = -190, upperBound = 0.0;
-    uint32_t polyDegree = 119; // 13, 27, 59, or 119;
+    double lowerBound = -100, upperBound = 0;
+    uint32_t polyDegree = 119; // 13, 27, 59, 119, 247, 495;
 
     // Step 4: Evaluation
     std::cout << "Evaluation started ... \n\n";

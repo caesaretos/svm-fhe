@@ -100,7 +100,7 @@ int main() {
 
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
-    uint32_t n = 30; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 2;

@@ -101,7 +101,7 @@ int main() {
 
     cout << "SVM RBF Kernel v1 started ... !\n\n";
 
-    uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 1.0/n;
@@ -129,7 +129,7 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 11; // 11 works
-    uint32_t scaleModSize = 50; // 50 works
+    uint32_t scaleModSize = 59; // 50 works
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
@@ -181,7 +181,7 @@ int main() {
     cout << "num towers in input ctxt: " << ct_x->GetElements()[0].GetAllElements().size() << endl;
     
     // keep the model un-encrypted
-    double lowerBound = -190, upperBound = 0.0;
+    double lowerBound = -100, upperBound = 0.0;
     uint32_t polyDegree = 119; // 13, 27, 59, or 119;
 
 #ifdef VERBOSE
