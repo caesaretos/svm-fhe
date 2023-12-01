@@ -101,7 +101,7 @@ int main() {
 
     cout << "SVM Sigmoid Kernel v1 started ... !\n\n";
 
-    uint32_t n = 4; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 1.0/n;
