@@ -100,7 +100,7 @@ int main() {
 
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
-    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 16; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 2;
@@ -127,7 +127,7 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 10;
+    uint32_t multDepth = 11;
     uint32_t scaleModSize = 59;
     uint32_t batchSize = 32; // next power of 2 of n
     CCParams<CryptoContextCKKSRNS> parameters;

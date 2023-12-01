@@ -151,7 +151,7 @@ int main() {
 
     cout << "SVM Polynomial Kernel started ... !\n\n";
 
-    uint32_t n = 32; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 16; // SVM vectors dimensions (# of predictors)
     
     // polynomial kernel parameters
     double gamma = 2;
@@ -179,7 +179,7 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 7;
+    uint32_t multDepth = 8;
     uint32_t scaleModSize = 59;
     uint32_t batchSize = next_power_of_2(n);
     CCParams<CryptoContextCKKSRNS> parameters;
@@ -201,7 +201,7 @@ int main() {
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalSumKeyGen(keys.secretKey);
-    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2, 4, 8, 16, 32}); // powers of two upto n
+    cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2, 4, 8, 16}); // powers of two upto n
     std::cout << "Key gen done\n";
 
     // utility function for debugging

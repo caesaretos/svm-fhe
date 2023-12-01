@@ -58,7 +58,7 @@ int main() {
 
     cout << "SVM linear started ... !\n\n";
 
-    uint32_t n = 30; // SVM vectors dimensions (# of predictors)
+    uint32_t n = 16; // SVM vectors dimensions (# of predictors)
 
     // read the data
     vector<double> weights = read_double_data_from_file("../data-linear-model/weights.txt");
@@ -84,8 +84,8 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 2;
-    uint32_t scaleModSize = 50;
-    uint32_t batchSize = 32; // next power of 2 of n
+    uint32_t scaleModSize = 59;
+    uint32_t batchSize = n; // next power of 2 of n
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
     parameters.SetScalingModSize(scaleModSize);
