@@ -180,7 +180,7 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 11;
-    uint32_t scaleModSize = 59;
+    uint32_t scaleModSize = 44;
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
@@ -203,7 +203,43 @@ int main() {
     cc->EvalSumKeyGen(keys.secretKey);
     cc->EvalRotateKeyGen(keys.secretKey, {0, 1, 2, 4, 8, 16, 32}); // powers of two upto n
     std::cout << "Key gen done\n";
+// for debugging only
+{
+	std::cout << "cc->GetCryptoParameters(): \n" << *cc->GetCryptoParameters() << "\n";
+	std::cout << "cc->GetElementParams(): \n" << *cc->GetElementParams() << "\n";
+	std::cout << "cc->GetEncodingParams(): \n" << *cc->GetEncodingParams() << "\n";
 
+	auto print_moduli_chain = [](const DCRTPoly& poly){
+		int num_primes = poly.GetNumOfElements();
+		double total_bit_len = 0.0;
+		for (int i = 0; i < num_primes; i++) {
+			auto qi = poly.GetParams()->GetParams()[i]->GetModulus();
+			std::cout << "q_" << i << ": " 
+						<< qi
+						<< ",  log q_" << i <<": " << log(qi.ConvertToDouble()) / log(2)
+						<< std::endl;
+			total_bit_len += log(qi.ConvertToDouble()) / log(2);
+		}   
+		std::cout << "Total bit length: " << total_bit_len << std::endl;
+	};
+
+	const std::vector<DCRTPoly>& ckks_pk = keys.publicKey->GetPublicElements();
+	std::cout << "Moduli chain of pk: " << std::endl;
+	print_moduli_chain(ckks_pk[0]);
+
+	std::cout << "parameters: \n" << parameters << "\n";
+	
+	std::vector<double> dummy = {0.,1.,2.};
+	Plaintext plain = cc->MakeCKKSPackedPlaintext(dummy);
+	auto ctxt = cc->Encrypt(keys.secretKey, plain);
+	const auto evalKeyVec = cc->GetEvalMultKeyVector(ctxt->GetKeyTag());
+	auto vecA = evalKeyVec[0]->GetAVector();
+	auto vecB = evalKeyVec[0]->GetBVector();
+	std::cout << "num DCRTPolys in A: " << vecA.size() << "\n";
+	std::cout << "num DCRTPolys in B: " << vecB.size() << "\n";
+	std::cout << "numTowers in one DCRTPoly: " << vecA[0].GetAllElements().size() << "\n";
+	// return 0;
+}
     // utility function for debugging
     /*
     auto decrypt_and_print = [&](Ciphertext<DCRTPoly> &ct, const string& label) {
