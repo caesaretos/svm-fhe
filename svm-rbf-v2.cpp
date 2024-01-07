@@ -180,7 +180,7 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 11;
-    uint32_t scaleModSize = 59;
+    uint32_t scaleModSize = 44;
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);

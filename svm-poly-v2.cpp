@@ -180,11 +180,13 @@ int main() {
 
     // Step 1: Setup CryptoContext
     uint32_t multDepth = 8;
-    uint32_t scaleModSize = 59;
     uint32_t batchSize = next_power_of_2(n);
+    usint dcrtBits               = 55;
+    usint firstMod               = 56;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetScalingModSize(scaleModSize);
+    parameters.SetScalingModSize(dcrtBits);
+    parameters.SetFirstModSize(firstMod);
     parameters.SetBatchSize(next_power_of_2(batchSize*n_SVs));
 
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
@@ -255,6 +257,8 @@ int main() {
     std::cout << "Encrypting x started ... \n";
     auto ct_x = cc->Encrypt(keys.publicKey, pt_x);
     std::cout << "Data encryption done\n";
+    cout << "num levels in input ctxt: " << ct_x->GetLevel() << "\n";
+    cout << "num towers in input ctxt: " << ct_x->GetElements()[0].GetAllElements().size() << endl;
     
     
     // keep the model un-encrypted

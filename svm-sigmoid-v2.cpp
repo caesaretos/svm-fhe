@@ -179,8 +179,8 @@ int main() {
     print_double_vector_comma_separated(y_expected_score, "y_expected_score");
 
     // Step 1: Setup CryptoContext
-    uint32_t multDepth = 14;
-    uint32_t scaleModSize = 59;
+    uint32_t multDepth = 14-1;
+    uint32_t scaleModSize = 44;
     uint32_t batchSize = n;
     CCParams<CryptoContextCKKSRNS> parameters;
     parameters.SetMultiplicativeDepth(multDepth);
