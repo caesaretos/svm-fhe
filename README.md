@@ -4,8 +4,7 @@ This is a sample program that demonstrates how to run SVM inference on encrypted
 
 The program uses the OpenFHE library to perform homomorphic encryption, which allows it to perform computations on encrypted data without decrypting it first. The program first loads a pre-trained SVM model and then encrypts the input data. The encrypted data is then passed to the SVM model, which performs inference on the data and returns the predicted class.
 
-The program is a simple example of how SVM inference can be performed on encrypted data. It is not intended for use in production.
-
+This project is a proof-of-concept implementation. It is intended to showcase the algorithm and its potential applications. This project is **not** meant to be used in production environments, and the authors are **not** responsible for any consequences that may arise from doing so.
 
 ## Getting Started
 
